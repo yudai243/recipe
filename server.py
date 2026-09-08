@@ -1,86 +1,115 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+import json
 import os
+import urllib.parse
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
+PORT = 8000
+DATA_FILE = "notes.json"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# ブラウザからのリクエストを処理するクラス
-# BaseHTTPRequestHandlerを継承することで、HTTP通信を扱えるようになる
+def load_notes():
+    """JSONファイルからメモを読み込む"""
+    if not os.path.exists(DATA_FILE):
+        return []
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return []
+
+def save_notes(notes):
+    """メモをJSONファイルに保存"""
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(notes, f, ensure_ascii=False, indent=2)
+
 class MyHandler(BaseHTTPRequestHandler):
-
-    # GETリクエスト（ページ表示など）が送られてきたときに自動で呼ばれる
     def do_GET(self):
-
-        # URLを解析して、パス部分だけを取得する
-        # 例: http://localhost:8000/about?id=1
-        # → path は "/about"
-        parsed_url = urlparse(self.path)
+        parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
 
-        # ==========================
-        # 静的ファイル（CSS・画像など）の処理
-        # ==========================
-        # URLが /static/ から始まる場合は、
-        # HTMLではなくCSSや画像ファイルを返す
+        # 静的ファイルの処理
         if path.startswith('/static/'):
             self.serve_static(path)
             return
 
-        # ==========================
-        # ルーティング処理
-        # ==========================
-        # URLごとに表示するHTMLを切り替える
+        # メモ削除処理
+        if path.startswith('/delete?id='):
+            query = parsed_url.query
+            params = urllib.parse.parse_qs(query)
+            try:
+                idx = int(params["id"][0])
+                notes = load_notes()
+                if 0 <= idx < len(notes):
+                    notes.pop(idx)
+                    save_notes(notes)
+            except (KeyError, ValueError, IndexError):
+                pass
+            self.redirect("/")
+            return
+
+        # メインページの表示
         if path == '/':
-            self.render_template('index.html')
-
-        elif path == '/about':
-            self.render_template('about.html')
-
-        elif path == '/contact':
-            self.render_template('contact.html')
-
-        # 定義されていないURLの場合は404エラーを表示する
+            self.serve_index()
         else:
             self.send_404()
 
-    def render_template(self, filename, **kwargs):
-        """テンプレートファイルを読み込み、プレースホルダーを置換して表示"""
+    def do_POST(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
 
-        try:
-            # templatesフォルダの中のHTMLファイルを指定する
-            # filepath = os.path.join("templates", filename)
-            filepath = os.path.join(BASE_DIR, "templates", filename)
+        if path == '/':
+            # メモ追加処理
+            length = int(self.headers["Content-Length"])
+            body = self.rfile.read(length).decode()
+            params = urllib.parse.parse_qs(body)
+            memo = params.get("memo", [""])[0]
 
-            # HTMLファイルを読み込む
-            with open(filepath, "r", encoding="utf-8") as f:
-                content = f.read()
+            if memo.strip():
+                notes = load_notes()
+                notes.append(memo)
+                save_notes(notes)
 
-            # ==========================
-            # テンプレート変数の置換
-            # ==========================
-            for key, value in kwargs.items():
-                content = content.replace(f"{{{{ {key} }}}}", str(value))
-
-            # ==========================
-            # HTTPレスポンスを返す
-            # ==========================
-
-            # ステータスコード200（成功）
-            self.send_response(200)
-
-            # ブラウザへ「HTMLですよ」と伝える
-            self.send_header("Content-type", "text/html; charset=utf-8")
-
-            # ヘッダー情報の送信終了
-            self.end_headers()
-
-            # HTMLの内容をブラウザへ送信する
-            self.wfile.write(content.encode("utf-8"))
-
-        except FileNotFoundError:
-            # HTMLファイルが存在しなければ404エラー
+            self.redirect("/")
+        else:
             self.send_404()
 
+    def serve_index(self):
+        notes = load_notes()
+
+        notes_html = ""
+
+        for i, note in enumerate(notes):
+
+            note_html = self.render_template(
+                "note.html",
+                id=i,
+                content=note.replace("\n", "")
+            )
+
+            notes_html += note_html
+
+        html = self.render_template(
+            "index.html",
+            notes=notes_html,
+            title="メモ帳アプリ"
+        )
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.end_headers()
+
+        self.wfile.write(html.encode("utf-8"))
+
+    def render_template(self, filename, **kwargs):
+        filepath = os.path.join(BASE_DIR, "templates", filename)
+
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        for key, value in kwargs.items():
+            content = content.replace(f"{{{{ {key} }}}}", str(value))
+
+        return content
     def serve_static(self, path):
         """静的ファイル（CSS、画像など）を配信"""
 
@@ -131,33 +160,24 @@ class MyHandler(BaseHTTPRequestHandler):
         except FileNotFoundError:
             # ファイルが存在しなければ404
             self.send_404()
-
-    def send_404(self):
-        """404 Not Foundを返す"""
-
-        # HTTPステータス404（ページが見つからない）
-        self.send_response(404)
-
-        # HTMLとして返す
-        self.send_header('Content-type', 'text/html; charset=utf-8')
-
-        # ヘッダー終了
-        self.end_headers()
-
-        # エラーメッセージをブラウザへ送信
-        self.wfile.write('<h1>404 Not Found</h1>')
-
-
 def run():
-    print(os.getcwd())
-    server_address = ('', 8000)
-    httpd = HTTPServer(server_address, MyHandler)
+    # 必要なディレクトリを作成
+    os.makedirs('templates', exist_ok=True)
+    os.makedirs('static', exist_ok=True)
 
-    print('🚀 サーバーを起動しました: http://localhost:8000')
-    print('📁 テンプレートディレクトリ: templates/')
-    print('📁 静的ファイルディレクトリ: static/')
+    server = HTTPServer(("localhost", PORT), MyHandler)
+    print(f"🚀 メモ帳アプリを起動しました")
+    print(f"📡 アドレス: http://localhost:{PORT}")
+    print(f"📁 テンプレート: templates/")
+    print(f"📁 静的ファイル: static/")
+    print(f"📝 データファイル: {DATA_FILE}")
+    print("🔄 終了するには Ctrl+C を押してください")
 
-    httpd.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n🛑 サーバーを停止しました")
+        server.server_close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
