@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>レシピ保存アプリ</h1>
+    <form method="post">
+        <p>
+            <label>料理のジャンル:
+                <select name="genre">
+                    <option value="" hidden>料理のジャンルを選んでください：</option>
+                    <option value="japanese">日本</option>
+                    <option value="chinese" selected>中華料理</option>
+                    <option value="french">フランス料理</option>
+                    <option value="turkish">トルコ料理</option>
+                    <option value="korean">フランス料理</option>
+                    <option value="italian">イタリア料理</option>
+                </select>
+            </label>
+            <textarea name="memo">手順を入れてください</textarea>
+        <button type="submit">保存</button>
+        </p>
+    </form>
+</body>
+
+</html>
