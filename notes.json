@@ -1,5 +1,5 @@
-[
-    "Pythonを勉強する",
-    "買い物へ行く",
-    "レポートを書く"
-]
+{
+  "genre": "和食",
+  "recipe_name": "adsf",
+  "steps": "adsfa"
+}
