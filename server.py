@@ -29,6 +29,7 @@ class MyHandler(BaseHTTPRequestHandler):
         if path.startswith('/static/'):
             self.serve_static(path)
             return
+            
         
         if path == '/':
             self.render_template('index.html')
