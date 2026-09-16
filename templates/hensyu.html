@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>レシピ編集</title>
+</head>
+<body>
+    <h1>レシピの編集</h1>
+    <form action="/edit" method="POST">
+        <label for="recipe_id">編集対象の料理名:</label>
+        <input type="text" id="recipe_id" name="recipe_id" required><br><br>
+
+        <label for="genre">新しいジャンル:</label>
+        <select id="genre" name="genre">
+            <option value="和食">和食</option>
+            <option value="洋食">洋食</option>
+            <option value="中華">中華</option>
+        </select><br><br>
+
+        <label for="recipe_name">新しい料理名:</label>
+        <input type="text" id="recipe_name" name="recipe_name" required><br><br>
+
+        <label for="steps">新しい手順:</label><br>
+        <textarea id="steps" name="steps" rows="5" cols="40" required></textarea><br><br>
+
+        <button type="submit">更新する</button>
+    </form>
+    <br>
+    <a href="index.html">一覧に戻る</a>
+</body>
+</html>

@@ -3,33 +3,30 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>レシピ一覧</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-    <h1>レシピ保存アプリ</h1>
-    <form method="post">
-        <p>
-            <label>料理のジャンル:
-                <select name="genre">
-                    <option value="" hidden>料理のジャンルを選んでください：</option>
-                    <option value="japanese">日本</option>
-                    <option value="chinese" selected>中華料理</option>
-                    <option value="french">フランス料理</option>
-                    <option value="turkish">トルコ料理</option>
-                    <option value="korean">フランス料理</option>
-                    <option value="italian">イタリア料理</option>
-                </select>
-            </label>
-            <textarea name="memo">手順を入れてください</textarea>
-        <button type="submit">保存</button>
-        </p>
-    </form>
+    <h1>レシピ一覧</h1>
+
     <hr>
 
     {{ notes }}
+
+    <div class="note">
+        {{ content }}
+        <br><br>
+
+        <a href="/delete?id={{ id }}">
+            削除
+        </a>
+
+    </div>
+    <div>
+        <a href="tuika.html">レシピを追加する</a> |
+        <a href="hensyu.html">レシピを編集する</a>
+    </div>
 </body>
 
 </html>
